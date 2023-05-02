@@ -73,6 +73,7 @@ test  <- dplyr::anti_join(df, train, by = 'id')
 **Summary stats**
 ```{r}
 
+df <- read.csv("/Users/linaelkjaerpedersen/Desktop/Datascience/Exam/diabetes_prediction_dataset.csv")
 
 df <- df %>% 
   filter(gender != "Other") %>% 
@@ -91,11 +92,11 @@ df_female <- df %>%
 
 summary(df)
 
-sd(df_temp$age)
+sd(df$age)
 
-df_temp <- df %>% 
+df <- df %>% 
   filter(diabetes == "1")
 
-summary(df_temp)
+summary(df)
 ```
 
