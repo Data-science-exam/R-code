@@ -94,9 +94,9 @@ summary(df)
 
 sd(df$age)
 
-df <- df %>% 
+df_diabetes <- df %>% 
   filter(diabetes == "1")
 
-summary(df)
+summary(df_diabetes)
 ```
 
