@@ -1,0 +1,166 @@
+---
+title: "datacleaning"
+author: "Helle Skjøth Sørensen"
+date: "2023-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+pacman::p_load(tidyverse, patchwork)
+```
+
+```{r loading data}
+#setwd("C:/Users/helle/OneDrive - Aarhus Universitet/AU/8th semester/Data Science/Exam")
+df <- read.csv("diabetes_prediction_dataset.csv") #100,000
+
+
+#filter out people of gender "other". There are only 18, and none of them have diabetes. 
+df <- df %>% 
+  filter(gender != "Other") #99,982 obs
+
+
+#removing datapoints with gender = other to simplify the gender variable
+df <- df %>% 
+  filter(gender != "Other") %>% 
+  mutate(smoking_history = as.factor(smoking_history),
+         gender = ifelse(gender == "Female", 0, 1),
+         gender = as.factor(gender),
+         hypertension = as.factor(hypertension),
+         heart_disease = as.factor(heart_disease),
+         diabetes = as.factor(diabetes))
+
+
+#inspecting smoking history categories
+unique(df$smoking_history)
+
+```
+
+
+**Summary stats**
+```{r}
+df_male <- df %>% 
+  filter(gender == "Male")
+
+df_female <- df %>% 
+  filter(gender == "Female")
+
+summary(df)
+
+sd(df$age)
+
+df_diabetes <- df %>% 
+  filter(diabetes == "1")
+
+summary(df_diabetes)
+
+sd(df_diabetes$age)
+
+df_healthy <- df %>% 
+  filter(diabetes == "0")
+
+summary(df_healthy)
+
+sd(df_healthy$age)
+```
+
+
+**Plots**
+
+```{r plots}
+#making an age variable per decade, for plotting purposes
+age_decade <- c("0-10", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89")
+
+df <- df %>% 
+  mutate(age_decade = ifelse(as.numeric(age) < 10, "0-9", "fail"),
+         age_decade = ifelse(as.numeric(age) > 9 & as.numeric(age) < 20, "10-19", age_decade),
+         age_decade = ifelse(as.numeric(age) > 19 & as.numeric(age) < 30, "20-29", age_decade),
+         age_decade = ifelse(as.numeric(age) > 29 & as.numeric(age) < 40, "30-39", age_decade),
+         age_decade = ifelse(as.numeric(age) > 39 & as.numeric(age) < 50, "40-49", age_decade),
+         age_decade = ifelse(as.numeric(age) > 49 & as.numeric(age) < 60, "50-59", age_decade),
+         age_decade = ifelse(as.numeric(age) > 59 & as.numeric(age) < 70, "60-69", age_decade),
+         age_decade = ifelse(as.numeric(age) > 69 & as.numeric(age) < 81, "70-80", age_decade),
+         #age_decade = ifelse(as.numeric(age) > 79 & as.numeric(age) < 90, "80-89", age_decade),
+         age_decade = as.factor(age_decade)
+         )
+
+p1 <- df %>% mutate(diabetes = ifelse(diabetes == 0, "Non-diabetec", "Diabetec")) %>% 
+  ggplot(aes(x = age_decade, fill = age_decade)) + 
+  geom_histogram(stat = 'count', width = .5) +
+  labs(x = "Age", y = "Count", color = "Gender") +
+  theme_bw() +
+  ggtitle("Age distributions") +
+  theme(legend.key.size = unit(.2, 'cm'), plot.title = element_text(hjust = .5, vjust = 0)) +
+  labs(fill = "Age per decade")+
+  facet_wrap(~diabetes, ncol = 1)
+
+p1
+  
+p2 <- df %>%  mutate(gender = ifelse(gender == 0, "Female", "Male"),
+               diabetes = ifelse(diabetes == 0, "Non-diabetec", "Diabetec")) %>% 
+  ggplot(aes(x = gender, fill = gender))+
+    geom_bar() +
+    theme_bw()+ 
+    ggtitle("Gender distributions") +
+    theme(legend.key.size = unit(.2, 'cm'), plot.title = element_text(hjust = .5, vjust = 0))+
+    facet_wrap(~diabetes)+
+    scale_fill_manual(values= c("#F0E442", "#009E73"))+
+    labs(x = "Gender", y = "Count", fill = "Gender")
+   
+
+p2
+
+p1+p2
+
+```
+
+
+
+```{r confusion matrix for prediction accuracy}
+TClass <- factor(c("True","True","False", "False"))
+PClass <- factor(c("False","True","False","True"))
+Y      <- c(519, 1128, 18336, 14)
+conf_df <- data.frame(TClass, PClass, Y)
+
+conf_df %>% 
+  ggplot(mapping = aes(x = PClass, y = TClass)) +
+  geom_tile(aes(fill = Y), colour = "white") +
+  geom_text(aes(label = sprintf("%1.0f", Y)), vjust = 1) +
+  scale_fill_gradient(low = "#C9FBEF", high = "#1E8ACB") +
+  theme_bw() + theme(legend.position = "none")+
+  scale_y_discrete(limits = c("True", "False"))+
+  labs(x = "Predicted label", y = "True label", fill = "Count")+
+  theme_bw()
+ 
+
+
+#Calculate accuracy on validation set
+
+ 14 +1128 + 18336 +519 #19997
+ 
+ #accurate predictions: 
+ ((18336 + 1128)/19997)*100
+ 
+ #false positive:
+ (14/19997)*100
+ 
+ #false negative: 
+ (519/19997)*100
+
+```
+```{r smoking info}
+no_inf_smok <- df %>% filter(smoking_history == "No Info")
+never_smok <- df %>% filter(smoking_history == "never")
+smoker <- df %>% filter(smoking_history != "never" & smoking_history != "No Info")
+
+unique(smoker$smoking_history)
+
+
+
+```
+
